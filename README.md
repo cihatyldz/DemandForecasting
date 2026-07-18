@@ -56,7 +56,7 @@ The full run takes roughly 10–15 minutes on a GPU runtime (deep learning model
 
 ## Citation
 
-If you use this code or build on the framework, please cite the paper. Archived version of this repository: <https://doi.org/10.5281/zenodo.XXXXXXX> *(DOI to be minted upon Zenodo publication; see release notes).*
+If you use this code or build on the framework, please cite the paper. Archived version of this repository: <https://doi.org/10.5281/zenodo.21433607> *(DOI to be minted upon Zenodo publication; see release notes).*
 
 ## License
 
