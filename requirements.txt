@@ -1,0 +1,14 @@
+# Tested on Google Colab (Python 3.10+, July 2026 runtime).
+# Versions are floors, not pins; the notebook seeds all libraries for reproducibility.
+numpy>=1.26
+pandas>=2.0
+scikit-learn>=1.3
+lightgbm>=4.0
+xgboost>=2.0
+tensorflow>=2.15
+shap>=0.44
+gradio>=4.0
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+openpyxl>=3.1
