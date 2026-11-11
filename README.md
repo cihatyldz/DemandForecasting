@@ -1,31 +1,38 @@
-# Explainable Multi-Horizon Demand Forecasting with Probabilistic Inventory Optimization
+# Leakage-free probabilistic demand forecasting for retail inventory decisions
 
-Reproduction materials for the paper *"Explainable Multi-Horizon Demand Forecasting with Probabilistic Inventory Optimization: A Unified Framework for Online Retail"* (submitted to the Turkish Journal of Electrical Engineering & Computer Sciences).
+Reproduction materials for the paper *"Leakage-free probabilistic demand forecasting for retail inventory decisions: evidence from two datasets"* by Cihat Yıldız and Semih Özel (Marmara University), submitted for publication.
 
-The framework integrates six components on the UCI Online Retail II dataset: (1) a densified daily data pipeline, (2) multi-model forecasting (LightGBM, XGBoost, Random Forest, LSTM, GRU, weighted Ensemble) with 26 engineered features, (3) LightGBM quantile regression with a seven-level calibration assessment (empirical coverage, Kupiec POF test, pinball loss, skill scores, reliability diagram), (4) SHAP TreeExplainer explainability, (5) Newsvendor inventory optimization with cost-ratio sensitivity analysis, and (6) a Gradio chatbot interface supporting nine query categories.
+The study evaluates a forecasting-to-inventory pipeline for daily retail demand under a leak-free protocol on two public datasets, **UCI Online Retail II** (45 product–country series) and **M5** (60 item series from Walmart store CA_1). It covers:
+
+- a **leakage audit**: same-day transaction, customer and price aggregates disclose the target and inflate apparent accuracy;
+- **point forecasts** (LightGBM, XGBoost, random forest, LSTM, GRU, ensemble) against four naive references, with MASE, RMSSE, Diebold–Mariano tests, 18 rolling-origin runs, panel-wide evaluation and direct forecasts for horizons of 1, 7 and 14 days;
+- **quantile forecasts** at seven levels with rearrangement and split-conformal correction (CQR), assessed by coverage, the Kupiec test and pinball skill;
+- **inventory policies**: base-stock levels set to the cost-implied critical quantile of lead-time demand (lead times 0, 3 and 7 days), compared ex ante with a static safety-stock rule over four cost ratios;
+- **intermittent demand** benchmarks (Croston, SBA, TSB, hurdle model), a controlled **censored-demand** experiment with a Kaplan–Meier correction, and **SHAP** explanations.
 
 ## Repository contents
 
 | File | Description |
 |---|---|
-| `Demand_Forecasting_Framework.ipynb` | Complete pipeline: data cleaning, densification, feature engineering, model training, quantile calibration, Diebold–Mariano tests, SHAP, Newsvendor optimization, sensitivity analysis, chatbot. Executed outputs are preserved so every number in the paper can be traced to a cell output. |
-| `online_retail_II.xlsx` | UCI Online Retail II dataset (see *Dataset* below for source and license). |
-| `requirements.txt` | Python dependencies. |
-| `LICENSE` | MIT license for the code in this repository. |
+| `Demand_Forecasting_Framework.ipynb` | Complete pipeline with executed outputs, so every number in the paper can be traced to a cell output. A revision log at the top of the notebook lists every change (R1–R14). |
+| `online_retail_II.xlsx` | UCI Online Retail II dataset (see *Data*). |
+| `make_fig_horizon_leadtime.py` | Draws Figure 3 from the CSV files written by the notebook. |
+| `requirements.txt` | Python package versions used for the reported results. |
+| `LICENSE` | MIT license for the code. |
 
-## Dataset
+## Data
 
-The dataset is **Online Retail II** from the UCI Machine Learning Repository:
-<https://archive.ics.uci.edu/dataset/502/online+retail+ii>
+**Online Retail II** — UCI Machine Learning Repository, <https://archive.ics.uci.edu/dataset/502/online+retail+ii> (doi: 10.24432/C5CG6D). 1,067,371 invoice lines of a UK-based online retailer, December 2009 – December 2011. The copy included here is unmodified and redistributed under the license stated on the UCI page (CC BY 4.0). The notebook expects it in the working directory as `online_retail_II.xlsx` with sheets `Year 2009-2010` and `Year 2010-2011`.
 
-It contains 1,067,371 transactions of a UK-based online retailer between December 2009 and December 2011. The copy included here is unmodified and is redistributed under the license stated on the UCI repository page (CC BY 4.0); please credit the UCI Machine Learning Repository and the original dataset donor when reusing it. If you prefer, delete the included file and download it directly from UCI — the notebook expects it in the working directory as `online_retail_II.xlsx` with sheets `Year 2009-2010` and `Year 2010-2011`.
+**M5** — not included because of its size and the competition's terms of use. Download `sales_train_evaluation.csv`, `calendar.csv` and `sell_prices.csv` from the Kaggle competition page <https://www.kaggle.com/competitions/m5-forecasting-accuracy/data> and place them in the working directory (or set `M5_DIR` in Section 10.10). If the files are missing, the M5 section is skipped and the rest of the notebook runs unchanged.
 
 ## How to reproduce
 
-**Google Colab (recommended — matches the paper's environment):**
+**Google Colab (matches the paper's environment):**
 1. Open `Demand_Forecasting_Framework.ipynb` in Colab.
-2. Upload `online_retail_II.xlsx` to the Colab working directory (left panel → Files → Upload).
-3. `Runtime → Run all`.
+2. Upload `online_retail_II.xlsx` and the three M5 files to the working directory (left panel → Files → Upload), or mount Google Drive and set `M5_DIR`.
+3. `Runtime → Run all`. A full run takes about 45–60 minutes; the M5 section alone takes about 15–20 minutes.
+4. Optional: `python make_fig_horizon_leadtime.py` in the same directory redraws Figure 3 from the notebook's CSV outputs.
 
 **Local:**
 ```bash
@@ -33,31 +40,39 @@ pip install -r requirements.txt
 jupyter notebook Demand_Forecasting_Framework.ipynb
 ```
 
-The full run takes roughly 10–15 minutes on a GPU runtime (deep learning models train fastest on GPU; all tree-based models are CPU-bound). The final cell launches the Gradio chatbot locally; it does not open a public link.
+The last section starts a small Gradio interface that is not part of the paper. In Colab, Gradio may create a temporary public link; the archived notebook does not contain such a link.
 
 ## Reproducibility notes
 
-- All stochastic components are seeded (`random_state=42` for scikit-learn/LightGBM/XGBoost; `tf.keras.utils.set_random_seed(42)` and `tf.config.experimental.enable_op_determinism()` for TensorFlow), so repeated runs produce identical results on the same runtime type.
-- The notebook writes all paper figures as 300-dpi PNGs to `figures_300dpi/` and prints the LaTeX source of the calibration and sensitivity tables, so every table and figure in the paper regenerates from a single run.
-- Consistency guards are built in: the seven-level calibration cell verifies that the P50/P75/P90 rows reproduce the paper's Table 8 values exactly before proceeding.
+- All stochastic components are seeded (`random_state=42` and the rolling-origin seeds 42, 7 and 2024; TensorFlow with `set_random_seed(42)` and deterministic ops).
+- The test period is used only for final evaluation: early stopping, ensemble weights and conformal corrections use a validation slice inside the training period, and outliers are capped with training data only.
+- Built-in consistency checks assert that later sections reproduce earlier results exactly (for example, the one-step and zero-lead-time results of Section 10.7 must equal those of Sections 10.2–10.4).
+- Results that depend only on LightGBM and XGBoost are identical across runs; random-forest and ensemble values can differ in the last digit across library versions.
+- Figures are written as 300-dpi PDF and PNG files to `figures_300dpi/`; per-series results are written as CSV files.
 
 ## Mapping between the paper and the notebook
 
 | Paper element | Notebook section |
 |---|---|
-| Table 3 (dataset parameters), §3.2–3.3 | Sections 2–3 (cleaning, densification) |
-| Table 4 (26 features), Figure 3 | Section 4 (feature engineering) |
-| Figure 2 (EDA) | Section 5 |
-| Table 7, Figures 4–5, Diebold–Mariano results | Sections 7–7.1 |
-| Table 8, Figure 6, Figure 7 (reliability diagram) | Sections 8–8.1 |
-| Figure 8 (SHAP) | Section 9 |
-| Table 9, Figure 9, sensitivity table | Sections 10–10.1 |
-| Figures 10–14 (chatbot) | Section 11 |
+| Table 1 (series groups) | Sections 2–3 (Online Retail II), 10.8 (demand classes), 10.10 (M5) |
+| Table 2 (leakage ablation) | Section 10.5 |
+| Table 3 (point forecasts), Diebold–Mariano tests | Sections 7–7.1 |
+| Table 4 (rolling origin and panel) | Sections 10.2–10.3 |
+| Table 5 (forecast horizons) | Sections 10.7 and 10.10 |
+| Table 6 (calibration), Figure 4 | Sections 10.4 and 10.6 |
+| Tables 7–8 (inventory policies, L = 0) | Sections 10.3.1, 10.4.1, 10.7 and 10.10 |
+| Table 9 (lead times) | Sections 10.7 and 10.10 |
+| Table 10 (intermittent demand) | Sections 10.8 and 10.10 |
+| Table 11 (censored demand) | Section 10.9 |
+| Figure 2 (forecasts), Figure 5 (SHAP) | Section 10.6.1 |
+| Figure 3 (horizon and lead time) | `make_fig_horizon_leadtime.py` (uses CSVs from Sections 10.7 and 10.10) |
+
+Figure 1 is a schematic diagram of the pipeline.
 
 ## Citation
 
-If you use this code or build on the framework, please cite the paper. Archived version of this repository: <hhttps://doi.org/10.5281/zenodo.21433735> *(DOI to be minted upon Zenodo publication; see release notes).*
+If you use this code, please cite the paper and the archived repository: <https://doi.org/10.5281/zenodo.21433735>
 
 ## License
 
-Code: MIT (see `LICENSE`). Dataset: per the UCI repository page (CC BY 4.0), © original dataset creators.
+Code: MIT (see `LICENSE`). Online Retail II: CC BY 4.0, © the original dataset creators. M5: subject to the Kaggle competition terms.
